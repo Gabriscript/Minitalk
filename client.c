@@ -6,73 +6,66 @@
 /*   By: ggargani <ggargani@student.hive.fi>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/18 11:28:47 by ggargani          #+#    #+#             */
-/*   Updated: 2025/02/18 11:28:47 by ggargani         ###   ########.fr       */
+/*   Updated: 2025/02/20 09:36:32 by ggargani         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "mini_talk.h"
 
-// Invia un singolo bit (0 o 1) al processo specificato tramite segnali.
-static void send_bit(int pid, char bit)
+static void	send_char(int pid, char c)
 {
-    if (bit == '1')
-        kill(pid, SIGUSR1); // Invia SIGUSR1 per rappresentare '1'
-    else
-        kill(pid, SIGUSR2); // Invia SIGUSR2 per rappresentare '0'
-    usleep(100); // Pausa per evitare problemi di sincronizzazione
+	int	bit;
+
+	bit = 0;
+	while (bit < 8)
+	{
+		if (((c >> bit) & 1) == 0)
+			kill(pid, SIGUSR2);
+		else
+			kill(pid, SIGUSR1);
+		usleep(80);
+		bit++;
+	}
 }
 
-// Invia un carattere al processo specificato convertendolo in una sequenza di bit.
-static void send_char(int pid, char c)
+static void	send_message(int pid, char *message)
 {
-    int bit;
+	int	i;
 
-    bit = 0;
-    while (bit < 8)
-    {
-        if (((c >> bit) & 1) == 0)
-         {
-            send_bit(pid, '0');
-        } else {
-            send_bit(pid, '1');
-        }
-        bit++;
-    }
+	i = 0;
+	while (message[i])
+	{
+		send_char(pid, message[i]);
+		i++;
+	}
+	send_char(pid, '\n');
 }
 
-// Invia una stringa di caratteri al processo specificato.
-static void send_message(int pid, char *message)
+static int	is_valid_pid(char *str)
 {
-    int i;
+	int	pid;
 
-    i = 0;
-    while (message[i])
-    {
-        send_char(pid, message[i]); // Invia ogni carattere
-        i++;
-    }
-    send_char(pid, '\n'); // Invia un newline per segnalare la fine del messaggio
+	pid = ft_atoi(str);
+	if (pid <= 0)
+	{
+		ft_putstr_fd("Error: Invalid PID\n", 2);
+		return (0);
+	}
+	return (1);
 }
 
-int main(int argc, char **argv)
+int	main(int argc, char **argv)
 {
-    int result;
-    int pid;
+	int	pid;
 
-    if (argc != 3)
-        return (-1);
-
-    pid = ft_atoi(argv[1]); // Ottieni l'ID del processo dal primo argomento
-
-    // Verifica che il PID sia valido
-    result = kill(pid, 0);
-    if (result != 0)
-    {
-        ft_putstr("Invalid PID\n"); //perror non è consentito
-        return (-1);
-    }
-    send_message(pid, argv[2]); // Invia il messaggio dal secondo argomento
-    return (0);
+	if (argc != 3)
+	{
+		ft_putstr_fd("Error: Provide 3 arguments\n", 2);
+		return (-1);
+	}
+	if (!is_valid_pid(argv[1]))
+		return (-1);
+	pid = ft_atoi(argv[1]);
+	send_message(pid, argv[2]);
+	return (0);
 }
-
-
